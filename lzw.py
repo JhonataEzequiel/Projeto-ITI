@@ -1,12 +1,12 @@
 import pickle
+import sys
 from copy import deepcopy
-from typing import List
 
 
 def set_max_dict(dictionary: dict, mode: int, max_dict_size: int, dictionary_size: int, lru_lfu_quantity: int,
-                 uses_of_str: dict, original_dict_size: int = 256):
+                 uses_of_str: dict, original_dict: dict, original_dict_size: int = 256):
     if mode == 0:
-        return dictionary, dictionary_size - 1
+        return dictionary, dictionary_size
     elif mode == 1:
         i = max_dict_size
         sorted_dict = dict(sorted(dictionary.items(), key=lambda _: _[1], reverse=True))
@@ -46,14 +46,18 @@ def set_max_dict(dictionary: dict, mode: int, max_dict_size: int, dictionary_siz
         for use in uses_to_remove:
             uses_of_str.pop(use)
         return dictionary, dictionary_size, uses_of_str
+    elif mode == 4:
+        dictionary = original_dict
+        return dictionary, dictionary_size, {}
 
     return dictionary, dictionary_size
 
 
 def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode: int = 0,
-             lru_quantity: int = 10) -> List:
+             lru_quantity: int = 10, min_rc: float = 1000):
     """
     Compress data and returns an archive with lzw compressor
+    :param min_rc: minimal ratio of compression allowed (result/_input)
     :param lru_quantity: quantity of phrases to be removed from the dict
     :param max_dict_size: maximum dictionary size allowed
     :param _input: input to compress, usually a txt
@@ -79,16 +83,23 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
                 else:
                     uses_of_str[temp] = 1
             result.append(dictionary[temp])
-            dictionary[temp2] = dictionary_size
-            dictionary_size += 1
-            if mode != 5 and dictionary_size > max_dict_size-1:
-                if mode in {2, 3}:
+            rc = min_rc + 1
+            if mode != 0 or dictionary_size < max_dict_size:
+                dictionary[temp2] = dictionary_size
+                dictionary_size += 1
+            if dictionary_size > max_dict_size:
+                size_of_result = sys.getsizeof(result)
+                size_of_input = sys.getsizeof(_input)
+                rc = size_of_input / size_of_result
+            if (mode not in {5, 4} and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
+                if mode in {2, 3, 4}:
                     dictionary, dictionary_size, uses_of_str = set_max_dict(dictionary, mode, max_dict_size,
                                                                             dictionary_size, lru_quantity, uses_of_str,
-                                                                            original_dict_size)
+                                                                            original_dict, original_dict_size)
                 else:
                     dictionary, dictionary_size = set_max_dict(dictionary, mode, max_dict_size, dictionary_size,
-                                                               lru_quantity, uses_of_str, original_dict_size)
+                                                               lru_quantity, uses_of_str, original_dict,
+                                                               original_dict_size)
             temp = f"{chr(c)}"
 
     if temp != "":
@@ -100,5 +111,5 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
 _input = open("dickens", "rb").read()
 _output = open("compressed_dickens", "wb")
 
-compressedFile = compress(_input, mode=5)
+compressedFile = compress(_input, mode=4)
 pickle.dump(compressedFile, _output)
