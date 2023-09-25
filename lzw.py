@@ -3,6 +3,26 @@ import sys
 from copy import deepcopy
 
 
+def set_ascii(dictionary, constant):
+    aux_ascii = []
+    for i in range(len(constant)):
+        aux_ascii.append(dictionary[constant[i]])
+    aux_ascii.append(len(aux_ascii))
+    aux_int = [aux_ascii[-1]]
+    aux_ascii = aux_ascii[:-1]
+    aux_ascii = aux_int + aux_ascii
+    return aux_ascii
+
+
+def set_ascii_constants(dictionary, dictionary_size, max_dict_size, mode, lru_quantity, min_rc):
+    ascii_dictionary_size = set_ascii(dictionary, str(dictionary_size))
+    ascii_max_dict_size = set_ascii(dictionary, str(max_dict_size))
+    ascii_mode = set_ascii(dictionary, str(mode))
+    ascii_lru_quantity = set_ascii(dictionary, str(lru_quantity))
+    ascii_min_rc = set_ascii(dictionary, str(min_rc))
+    return ascii_dictionary_size + ascii_max_dict_size + ascii_mode + ascii_lru_quantity + ascii_min_rc
+
+
 def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quantity: int,
                  uses_of_str: dict, original_dict: dict, original_dict_size: int = 256):
     if mode in {1, 4}:
@@ -44,7 +64,7 @@ def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quan
     return dictionary, dictionary_size
 
 
-def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode: int = 0,
+def compress(_input, dictionary_size: int = 512, max_dict_size: int = 1024, mode: int = 0,
              lru_quantity: int = 10, min_rc: float = 1000):
     """
     Compress data and returns an archive with lzw compressor
@@ -56,13 +76,20 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
     :param mode: 0 - static dict, 1 - reboot dict to first size, 2 - LRU, 3 - LFU, 4 - Low RC reboot, 5 - infinity
     :return: result
     """
-    result = []
     temp = ""
     uses_of_str = {}
     original_dict_size = dictionary_size
 
-    dictionary = {chr(i): i for i in range(dictionary_size)}
+    if dictionary_size <= 256:
+        dictionary = {chr(i): i for i in range(dictionary_size)}
+    else:
+        dictionary = {chr(i): i for i in range(256)}
+        for i in range(256, dictionary_size):
+            dictionary[chr(i - 256) + chr(i - 255)] = i
     original_dict = deepcopy(dictionary)
+
+    result = set_ascii_constants(dictionary, dictionary_size, max_dict_size, mode, lru_quantity, min_rc)
+
     for c in _input:
         temp2 = temp + chr(c)
         if temp2 in dictionary.keys():
@@ -99,7 +126,7 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
 
 
 _input = open("dickens", "rb").read()
-_output = open("compressed_dickens", "wb")
+_output = open("compressed_dickens.bin", "wb")
 
 compressedFile = compress(_input, mode=5)
 pickle.dump(compressedFile, _output)
