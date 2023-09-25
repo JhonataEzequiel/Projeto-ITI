@@ -6,12 +6,23 @@ def set_max_dict(dictionary: dict, mode: int, max_dict_size: int, dictionary_siz
                  uses_of_str: dict):
     if mode == 0:
         return dictionary, dictionary_size - 1
-    if mode == 1:
+    elif mode == 1:
         dictionary = dictionary[:max_dict_size - 1]
         a = 1
-    if mode == 2:
-        uses_of_str = dict(sorted(uses_of_str.items()))
-        a = 1
+    elif mode == 2:
+        uses_of_str = dict(sorted(uses_of_str.items(), reverse=True))
+        uses_to_remove = []
+        i = 1
+        for use in uses_of_str:
+            dictionary.pop(use)
+            uses_to_remove.append(use)
+            i += 1
+            if i > lru_quantity:
+                dictionary_size = dictionary_size - lru_quantity
+                break
+        for use in uses_to_remove:
+            uses_of_str.pop(use)
+        return dictionary, dictionary_size, uses_of_str
     return dictionary, dictionary_size
 
 
@@ -26,31 +37,31 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
     :param mode: 0 - static dict, 1 - reboot dict to first size, 2 - LRU, 3 - LFU, 4 - Low RC reboot, 5 - infinity
     :return: result
     """
-    dictionary = {}
     result = []
     temp = ""
     uses_of_str = {}
 
-    for i in range(0, dictionary_size):
-        dictionary[str(chr(i))] = i
-
+    dictionary = {chr(i): i for i in range(dictionary_size)}
     for c in _input:
-        temp2 = temp + str(chr(c))
+        temp2 = temp + chr(c)
         if temp2 in dictionary.keys():
             temp = temp2
         else:
-            if temp2 not in uses_of_str.keys():
-                uses_of_str[temp2] = 1
-            else:
+            if temp2 in uses_of_str:
                 uses_of_str[temp2] += 1
+            else:
+                uses_of_str[temp2] = 1
             result.append(dictionary[temp])
             dictionary[temp2] = dictionary_size
             dictionary_size += 1
-            if mode != 5:
-                if dictionary_size > max_dict_size-1:
+            if mode != 5 and dictionary_size > max_dict_size-1:
+                if mode == 2:
+                    dictionary, dictionary_size, uses_of_str = set_max_dict(dictionary, mode, max_dict_size,
+                                                                            dictionary_size, lru_quantity, uses_of_str)
+                else:
                     dictionary, dictionary_size = set_max_dict(dictionary, mode, max_dict_size, dictionary_size,
                                                                lru_quantity, uses_of_str)
-            temp = "" + str(chr(c))
+            temp = f"{chr(c)}"
 
     if temp != "":
         result.append(dictionary[temp])
@@ -61,5 +72,5 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
 _input = open("dickens", "rb").read()
 _output = open("compressed_dickens", "wb")
 
-compressedFile = compress(_input, mode=1)
+compressedFile = compress(_input, mode=2)
 pickle.dump(compressedFile, _output)
