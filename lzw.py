@@ -65,8 +65,10 @@ def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quan
 
 
 def set_initial_dict(dictionary_size: int):
-    dictionary = dict({chr(i): i for i in range(256)},
-                      **{chr(i - 256) + chr(i - 255): i for i in range(256, dictionary_size)})
+    dictionary = dict(
+        {chr(i): i for i in range(256)},
+        **{chr(i - 256) + chr(i - 255): i for i in range(256, dictionary_size)}
+    )
     return dictionary, deepcopy(dictionary)
 
 
@@ -132,5 +134,5 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
 _input = open("dickens", "rb").read()
 _output = open("compressed_dickens.bin", "wb")
 
-compressedFile = compress(_input, mode=5)
+compressedFile = compress(_input, mode=0)
 pickle.dump(compressedFile, _output)
