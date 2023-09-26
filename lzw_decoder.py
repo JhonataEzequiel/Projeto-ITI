@@ -33,7 +33,7 @@ def decompress(_input_):
     _input_ = _input_[1:]
     result = [previous]
     for bit in _input_:
-        aux = dictionary.get(bit, previous + previous[0])
+        aux = dictionary[bit] if bit in dictionary.keys() else previous + previous[0]
         result.append(aux)
         dictionary[dictionary_size] = previous + aux[0]
         dictionary_size += 1
