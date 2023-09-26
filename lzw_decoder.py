@@ -1,32 +1,6 @@
 from lzw import *
 
 
-def get_ascii(_input2):
-    quantity_of_chars_to_form_constant = _input2[0]
-    _input2 = _input2[1:]
-    constant = _input2[:quantity_of_chars_to_form_constant]
-    string_constant = ''.join(
-        f'{chr(constant[i])}' for i in range(len(constant))
-    )
-    _input2 = _input2[len(constant):]
-    return int(string_constant), _input2
-
-
-def get_ascii_constants(_input1):
-    dictionary_size, _input1 = get_ascii(_input1)
-    max_dict_size, _input1 = get_ascii(_input1)
-    mode, _input1 = get_ascii(_input1)
-    lru_quantity, _input1 = get_ascii(_input1)
-    min_rc, _input1 = get_ascii(_input1)
-    if dictionary_size <= 256:
-        dictionary = {i: chr(i) for i in range(dictionary_size)}
-    else:
-        dictionary = {chr(i): i for i in range(256)}
-        for i in range(256, dictionary_size):
-            dictionary[chr(i - 256) + chr(i - 255)] = i
-    return dictionary, dictionary_size, max_dict_size, mode, lru_quantity, min_rc, _input1
-
-
 def decompress(_input_):
     dictionary, dictionary_size, max_dict_size, mode, lru_quantity, min_rc, _input_ = get_ascii_constants(_input_)
     dictionary_index = dictionary_size
@@ -39,29 +13,25 @@ def decompress(_input_):
     for bit in _input_:
         aux = dictionary[bit] if bit in dictionary.keys() else previous + previous[0]
         result.append(aux)
-        if mode != 5:
-            if aux not in original_dict.values():
-                if mode not in {2, 3} and aux in uses_of_str.keys():
-                    uses_of_str[aux] += 1
-                else:
-                    uses_of_str[aux] = 1
-            dictionary_size = len(dictionary)
-            if mode != 0 or dictionary_size < max_dict_size:
-                dictionary[dictionary_index] = previous + aux[0]
-                dictionary_index += 1
-                dictionary_size = len(dictionary)
-            rc = min_rc + 1
-            if mode == 4 and dictionary_size > max_dict_size:
-                rc = calculate_rc(_input, result)
-            if (mode != 4 and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
-                if mode in {2, 4}:
-                    dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict,
-                                                           decompress=True)
-                else:
-                    dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
-        else:
+        if mode == 5:
             dictionary[dictionary_index] = previous + aux[0]
             dictionary_index += 1
+        else:
+            uses_of_str = set_uses_of_str(
+                original_dict=original_dict, mode=mode, uses_of_str=uses_of_str, decompress=True, aux=aux
+            )
+            dictionary, dictionary_index, dictionary_size = update_result_and_dictionary(
+                dictionary=dictionary, mode=mode, max_dict_size=max_dict_size, dictionary_index=dictionary_index,
+                previous=previous, aux=aux, decompress=True
+            )
+            rc = calculate_rc(
+                result=_input_, _input=result, mode=mode, dictionary_size=dictionary_size, max_dict_size=max_dict_size,
+                min_rc=min_rc
+            )
+            dictionary, uses_of_str = treat_max_dict(
+                mode, dictionary_size, max_dict_size, rc, min_rc, dictionary, lru_quantity, uses_of_str,
+                original_dict, decompress=True
+            )
         previous = aux
     return result
 
