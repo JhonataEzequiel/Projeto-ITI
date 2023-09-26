@@ -65,15 +65,15 @@ def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quan
 
 
 def set_initial_dict(dictionary_size: int):
-    if dictionary_size <= 256:
-        dictionary = {chr(i): i for i in range(dictionary_size)}
-    else:
-        dictionary = {chr(i): i for i in range(256)}
-        for i in range(256, dictionary_size):
-            dictionary[chr(i - 256) + chr(i - 255)] = i
-    original_dict = deepcopy(dictionary)
+    dictionary = dict({chr(i): i for i in range(256)},
+                      **{chr(i - 256) + chr(i - 255): i for i in range(256, dictionary_size)})
+    return dictionary, deepcopy(dictionary)
 
-    return dictionary, original_dict
+
+def add_item_to_dict(dictionary, dictionary_size, temp2):
+    dictionary[temp2] = dictionary_size
+    dictionary_size += 1
+    return dictionary, dictionary_size
 
 
 def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode: int = 0,
@@ -107,8 +107,7 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
                     uses_of_str[temp] = 1
             result.append(dictionary[temp])
             if mode != 0 or dictionary_size < max_dict_size:
-                dictionary[temp2] = dictionary_size
-                dictionary_size += 1
+                dictionary, dictionary_size = add_item_to_dict(dictionary, dictionary_size, temp2)
             rc = min_rc + 1
             if mode == 4 and dictionary_size > max_dict_size:
                 size_of_result = sys.getsizeof(result)
