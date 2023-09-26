@@ -3,6 +3,13 @@ import sys
 from copy import deepcopy
 
 
+def get_key_from_value(my_dict, value_to_find):
+    for key, value in my_dict.items():
+        if value == value_to_find:
+            return key
+    return None
+
+
 def set_ascii(dictionary, constant):
     aux_ascii = []
     for i in range(len(constant)):
@@ -24,7 +31,7 @@ def set_ascii_constants(dictionary, dictionary_size, max_dict_size, mode, lru_qu
 
 
 def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quantity: int,
-                 uses_of_str: dict, original_dict: dict, original_dict_size: int = 256):
+                 uses_of_str: dict, original_dict: dict, original_dict_size: int = 256, decompress: bool = False):
     if mode in {1, 4}:
         dictionary = deepcopy(original_dict)
         dictionary_size = original_dict_size
@@ -51,7 +58,11 @@ def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quan
         uses_to_remove = []
         i = 1
         for use in uses_of_str:
-            dictionary.pop(use)
+            if decompress:
+                key = get_key_from_value(dictionary, use)
+                dictionary.pop(key)
+            else:
+                dictionary.pop(use)
             uses_to_remove.append(use)
             i += 1
             if i > lru_lfu_quantity:
@@ -134,5 +145,5 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
 _input = open("dickens", "rb").read()
 _output = open("compressed_dickens.bin", "wb")
 
-compressedFile = compress(_input, mode=0)
+compressedFile = compress(_input, mode=3)
 pickle.dump(compressedFile, _output)

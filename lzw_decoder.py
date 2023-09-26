@@ -39,13 +39,15 @@ def decompress(_input_):
     for bit in _input_:
         aux = dictionary[bit] if bit in dictionary.keys() else previous + previous[0]
         result.append(aux)
-        if mode not in {2, 3} and aux in uses_of_str.keys():
-            uses_of_str[aux] += 1
-        else:
-            uses_of_str[aux] = 1
+        if aux not in original_dict.values():
+            if mode not in {2, 3} and aux in uses_of_str.keys():
+                uses_of_str[aux] += 1
+            else:
+                uses_of_str[aux] = 1
         if mode != 0 or dictionary_size < max_dict_size:
             dictionary[dictionary_size] = previous + aux[0]
             dictionary_size += 1
+        rc = min_rc + 1
         if mode == 4 and dictionary_size > max_dict_size:
             size_of_result = sys.getsizeof(result)
             size_of_input = sys.getsizeof(_input)
@@ -54,10 +56,11 @@ def decompress(_input_):
             if mode in {2, 3, 4}:
                 dictionary, dictionary_size, uses_of_str = set_max_dict(dictionary, mode, dictionary_size,
                                                                         lru_quantity, uses_of_str, original_dict,
-                                                                        original_dict_size)
+                                                                        original_dict_size, decompress=True)
             else:
                 dictionary, dictionary_size = set_max_dict(dictionary, mode, dictionary_size, lru_quantity,
-                                                           uses_of_str, original_dict, original_dict_size)
+                                                           uses_of_str, original_dict, original_dict_size,
+                                                           decompress=True)
         previous = aux
     return result
 
