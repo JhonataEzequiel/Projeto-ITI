@@ -48,5 +48,5 @@ def compress(_input, dictionary_index: int = 256, max_dict_size: int = 512, mode
 _input = open("dickens", "rb").read()
 _output = open("compressed_dickens.bin", "wb")
 
-compressedFile = compress(_input, mode=2)
+compressedFile = compress(_input, mode=4)
 pickle.dump(compressedFile, _output)

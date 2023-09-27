@@ -25,7 +25,7 @@ def decompress(_input_):
                 previous=previous, aux=aux, decompress=True
             )
             rc = calculate_rc(
-                result=_input_, _input=result, mode=mode, dictionary_size=dictionary_size, max_dict_size=max_dict_size,
+                result=_input, _input=result, mode=mode, dictionary_size=dictionary_size, max_dict_size=max_dict_size,
                 min_rc=min_rc
             )
             dictionary, uses_of_str = treat_max_dict(

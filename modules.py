@@ -25,21 +25,25 @@ def set_ascii_constants(dictionary, dictionary_size, max_dict_size, mode, lru_qu
     return ascii_dictionary_size + ascii_max_dict_size + ascii_mode + ascii_lru_quantity + ascii_min_rc
 
 
-def remove_dict_entries(uses_of_str, decompress, dictionary, lru_lfu_quantity, mode=0):
-    i = 1
-    uses_to_remove = []
-    for use in uses_of_str:
-        if decompress:
-            key = get_key_from_value(dictionary, use)
-            dictionary.pop(key)
-        else:
-            dictionary.pop(use)
-        uses_to_remove.append(use)
-        i += 1
-        if i > lru_lfu_quantity:
-            break
-    for use in uses_to_remove:
-        uses_of_str.pop(use)
+def remove_dict_entries(uses_of_str, decompress, dictionary, lru_lfu_quantity, original_dict, mode=0):
+    if len(uses_of_str) >= lru_lfu_quantity:
+        i = 1
+        uses_to_remove = []
+        for use in uses_of_str:
+            if decompress:
+                key = get_key_from_value(dictionary, use)
+                dictionary.pop(key)
+            else:
+                dictionary.pop(use)
+            uses_to_remove.append(use)
+            i += 1
+            if i > lru_lfu_quantity:
+                break
+        for use in uses_to_remove:
+            uses_of_str.pop(use)
+    else:
+        dictionary = deepcopy(original_dict)
+        uses_of_str = {}
     return dictionary, uses_of_str
 
 
@@ -50,10 +54,10 @@ def set_max_dict(dictionary: dict, mode: int, lru_lfu_quantity: int, uses_of_str
         if mode == 4:
             return dictionary, {}
     elif mode == 2:
-        return remove_dict_entries(uses_of_str, decompress, dictionary, lru_lfu_quantity, mode=2)
+        return remove_dict_entries(uses_of_str, decompress, dictionary, lru_lfu_quantity, original_dict, mode=2)
     elif mode == 3:
         uses_of_str = dict(sorted(uses_of_str.items(), key=lambda _: _[1]))
-        return remove_dict_entries(uses_of_str, decompress, dictionary, lru_lfu_quantity)
+        return remove_dict_entries(uses_of_str, decompress, dictionary, lru_lfu_quantity, original_dict)
 
     return dictionary
 
