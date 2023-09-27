@@ -3,7 +3,7 @@ from modules import *
 
 
 def compress(_input, dictionary_index: int = 256, max_dict_size: int = 512, mode: int = 0,
-             lru_quantity: int = 256, min_rc: float = 1000):
+             lru_quantity: int = 50, min_rc: float = 1000):
     """
     Compress data and returns an archive with lzw compressor
     :param min_rc: minimal ratio of compression allowed (result/_input)
