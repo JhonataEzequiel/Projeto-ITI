@@ -39,25 +39,29 @@ def decompress(_input_):
     for bit in _input_:
         aux = dictionary[bit] if bit in dictionary.keys() else previous + previous[0]
         result.append(aux)
-        if aux not in original_dict.values():
-            if mode not in {2, 3} and aux in uses_of_str.keys():
-                uses_of_str[aux] += 1
-            else:
-                uses_of_str[aux] = 1
-        dictionary_size = len(dictionary)
-        if mode != 0 or dictionary_size < max_dict_size:
+        if mode != 5:
+            if aux not in original_dict.values():
+                if mode not in {2, 3} and aux in uses_of_str.keys():
+                    uses_of_str[aux] += 1
+                else:
+                    uses_of_str[aux] = 1
+            dictionary_size = len(dictionary)
+            if mode != 0 or dictionary_size < max_dict_size:
+                dictionary[dictionary_index] = previous + aux[0]
+                dictionary_index += 1
+                dictionary_size = len(dictionary)
+            rc = min_rc + 1
+            if mode == 4 and dictionary_size > max_dict_size:
+                rc = calculate_rc(_input, result)
+            if (mode != 4 and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
+                if mode in {2, 4}:
+                    dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict,
+                                                           decompress=True)
+                else:
+                    dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
+        else:
             dictionary[dictionary_index] = previous + aux[0]
             dictionary_index += 1
-            dictionary_size = len(dictionary)
-        rc = min_rc + 1
-        if mode == 4 and dictionary_size > max_dict_size:
-            rc = calculate_rc(_input, result)
-        if (mode not in {5, 4} and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
-            if mode in {2, 4}:
-                dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict,
-                                                       decompress=True)
-            else:
-                dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
         previous = aux
     return result
 

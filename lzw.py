@@ -115,26 +115,30 @@ def compress(_input, dictionary_index: int = 256, max_dict_size: int = 512, mode
         if temp2 in dictionary.keys():
             temp = temp2
         else:
-            if temp not in original_dict.keys():
-                if mode not in {2, 3} and temp in uses_of_str.keys():
-                    uses_of_str[temp] += 1
-                else:
-                    uses_of_str[temp] = 1
-            result.append(dictionary[temp])
-            dictionary_size = len(dictionary)
-            if mode != 0 or dictionary_size < max_dict_size:
-                dictionary, dictionary_index = add_item_to_dict(dictionary, dictionary_index, temp2)
+            if mode != 5:
+                if temp not in original_dict.keys():
+                    if mode not in {2, 3} and temp in uses_of_str.keys():
+                        uses_of_str[temp] += 1
+                    else:
+                        uses_of_str[temp] = 1
+                result.append(dictionary[temp])
                 dictionary_size = len(dictionary)
-            rc = min_rc + 1
-            if mode == 4 and dictionary_size > max_dict_size:
-                rc = calculate_rc(result, _input)
+                if mode != 0 or dictionary_size < max_dict_size:
+                    dictionary, dictionary_index = add_item_to_dict(dictionary, dictionary_index, temp2)
+                    dictionary_size = len(dictionary)
+                rc = min_rc + 1
+                if mode == 4 and dictionary_size > max_dict_size:
+                    rc = calculate_rc(result, _input)
 
-            if (mode not in {5, 4} and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
-                if mode in {2, 3, 4}:
-                    dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
-                else:
-                    dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
-            temp = f"{chr(c)}"
+                if (mode != 4 and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
+                    if mode in {2, 3, 4}:
+                        dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str,
+                                                               original_dict)
+                    else:
+                        dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
+                temp = f"{chr(c)}"
+            else:
+                dictionary, dictionary_index = add_item_to_dict(dictionary, dictionary_index, temp2)
 
     if temp != "":
         result.append(dictionary[temp])
