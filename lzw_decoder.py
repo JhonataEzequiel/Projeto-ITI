@@ -29,7 +29,7 @@ def get_ascii_constants(_input1):
 
 def decompress(_input_):
     dictionary, dictionary_size, max_dict_size, mode, lru_quantity, min_rc, _input_ = get_ascii_constants(_input_)
-    original_dict_size = dictionary_size
+    dictionary_index = dictionary_size
     original_dict = deepcopy(dictionary)
     uses_of_str = {}
     previous = chr(_input_[0])
@@ -44,23 +44,20 @@ def decompress(_input_):
                 uses_of_str[aux] += 1
             else:
                 uses_of_str[aux] = 1
+        dictionary_size = len(dictionary)
         if mode != 0 or dictionary_size < max_dict_size:
-            dictionary[dictionary_size] = previous + aux[0]
-            dictionary_size += 1
+            dictionary[dictionary_index] = previous + aux[0]
+            dictionary_index += 1
+            dictionary_size = len(dictionary)
         rc = min_rc + 1
         if mode == 4 and dictionary_size > max_dict_size:
-            size_of_result = sys.getsizeof(result)
-            size_of_input = sys.getsizeof(_input)
-            rc = size_of_input / size_of_result
+            rc = calculate_rc(_input, result)
         if (mode not in {5, 4} and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
-            if mode in {2, 3, 4}:
-                dictionary, dictionary_size, uses_of_str = set_max_dict(dictionary, mode, dictionary_size,
-                                                                        lru_quantity, uses_of_str, original_dict,
-                                                                        original_dict_size, decompress=True)
+            if mode in {2, 4}:
+                dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict,
+                                                       decompress=True)
             else:
-                dictionary, dictionary_size = set_max_dict(dictionary, mode, dictionary_size, lru_quantity,
-                                                           uses_of_str, original_dict, original_dict_size,
-                                                           decompress=True)
+                dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
         previous = aux
     return result
 

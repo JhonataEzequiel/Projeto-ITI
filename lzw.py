@@ -30,13 +30,12 @@ def set_ascii_constants(dictionary, dictionary_size, max_dict_size, mode, lru_qu
     return ascii_dictionary_size + ascii_max_dict_size + ascii_mode + ascii_lru_quantity + ascii_min_rc
 
 
-def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quantity: int,
-                 uses_of_str: dict, original_dict: dict, original_dict_size: int = 256, decompress: bool = False):
+def set_max_dict(dictionary: dict, mode: int, lru_lfu_quantity: int, uses_of_str: dict, original_dict: dict,
+                 decompress: bool = False):
     if mode in {1, 4}:
         dictionary = deepcopy(original_dict)
-        dictionary_size = original_dict_size
         if mode == 4:
-            return dictionary, dictionary_size, {}
+            return dictionary, {}
     elif mode == 2:
         uses_to_remove = []
         reversed_dict = list(dictionary.keys())[::-1]
@@ -47,12 +46,11 @@ def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quan
             uses_to_remove.append(use)
             i += 1
             if i > lru_lfu_quantity:
-                dictionary_size = dictionary_size - lru_lfu_quantity
                 break
         for use in uses_to_remove:
             if use in uses_of_str:
                 uses_of_str.pop(use)
-        return dictionary, dictionary_size, uses_of_str
+        return dictionary, uses_of_str
     elif mode == 3:
         uses_of_str = dict(sorted(uses_of_str.items(), key=lambda _: _[1]))
         uses_to_remove = []
@@ -66,13 +64,12 @@ def set_max_dict(dictionary: dict, mode: int, dictionary_size: int, lru_lfu_quan
             uses_to_remove.append(use)
             i += 1
             if i > lru_lfu_quantity:
-                dictionary_size = dictionary_size - lru_lfu_quantity
                 break
         for use in uses_to_remove:
             uses_of_str.pop(use)
-        return dictionary, dictionary_size, uses_of_str
+        return dictionary, uses_of_str
 
-    return dictionary, dictionary_size
+    return dictionary
 
 
 def set_initial_dict(dictionary_size: int):
@@ -89,7 +86,13 @@ def add_item_to_dict(dictionary, dictionary_size, temp2):
     return dictionary, dictionary_size
 
 
-def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode: int = 0,
+def calculate_rc(result, _input):
+    size_of_result = sys.getsizeof(result)
+    size_of_input = sys.getsizeof(_input)
+    return size_of_input / size_of_result
+
+
+def compress(_input, dictionary_index: int = 256, max_dict_size: int = 512, mode: int = 0,
              lru_quantity: int = 10, min_rc: float = 1000):
     """
     Compress data and returns an archive with lzw compressor
@@ -97,16 +100,15 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
     :param lru_quantity: quantity of phrases to be removed from the dict
     :param max_dict_size: maximum dictionary size allowed
     :param _input: input to compress, usually a txt
-    :param dictionary_size: initial dictionary_size
+    :param dictionary_index: initial dictionary_size
     :param mode: 0 - static dict, 1 - reboot dict to first size, 2 - LRU, 3 - LFU, 4 - Low RC reboot, 5 - infinity
     :return: result
     """
     temp = ""
     uses_of_str = {}
-    original_dict_size = dictionary_size
 
-    dictionary, original_dict = set_initial_dict(dictionary_size)
-    result = set_ascii_constants(dictionary, dictionary_size, max_dict_size, mode, lru_quantity, min_rc)
+    dictionary, original_dict = set_initial_dict(dictionary_index)
+    result = set_ascii_constants(dictionary, dictionary_index, max_dict_size, mode, lru_quantity, min_rc)
 
     for c in _input:
         temp2 = temp + chr(c)
@@ -119,21 +121,19 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
                 else:
                     uses_of_str[temp] = 1
             result.append(dictionary[temp])
+            dictionary_size = len(dictionary)
             if mode != 0 or dictionary_size < max_dict_size:
-                dictionary, dictionary_size = add_item_to_dict(dictionary, dictionary_size, temp2)
+                dictionary, dictionary_index = add_item_to_dict(dictionary, dictionary_index, temp2)
+                dictionary_size = len(dictionary)
             rc = min_rc + 1
             if mode == 4 and dictionary_size > max_dict_size:
-                size_of_result = sys.getsizeof(result)
-                size_of_input = sys.getsizeof(_input)
-                rc = size_of_input / size_of_result
+                rc = calculate_rc(result, _input)
+
             if (mode not in {5, 4} and dictionary_size > max_dict_size) or (rc < min_rc and mode == 4):
                 if mode in {2, 3, 4}:
-                    dictionary, dictionary_size, uses_of_str = set_max_dict(dictionary, mode, dictionary_size,
-                                                                            lru_quantity, uses_of_str, original_dict,
-                                                                            original_dict_size)
+                    dictionary, uses_of_str = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
                 else:
-                    dictionary, dictionary_size = set_max_dict(dictionary, mode, dictionary_size, lru_quantity,
-                                                               uses_of_str, original_dict, original_dict_size)
+                    dictionary = set_max_dict(dictionary, mode, lru_quantity, uses_of_str, original_dict)
             temp = f"{chr(c)}"
 
     if temp != "":
@@ -145,5 +145,5 @@ def compress(_input, dictionary_size: int = 256, max_dict_size: int = 512, mode:
 _input = open("dickens", "rb").read()
 _output = open("compressed_dickens.bin", "wb")
 
-compressedFile = compress(_input, mode=3)
+compressedFile = compress(_input, mode=5)
 pickle.dump(compressedFile, _output)
